@@ -73,7 +73,9 @@ app.listen(port, function() {
 });
 ```
 
+http://localhost:3333/routerAPI/
 
+http://localhost:3333/routerAPI/about
 
 ## Logs
 
@@ -263,26 +265,59 @@ npm install mongoose
 
 
 
+### Docker
+
 Docker install mongoldb
 
 ```bash
 docker pull mongo
 ```
 
+DockerFile
+
+```dockerfile
+FROM node:16.6.1-alpine
+RUN mkdir /ExpressApp
+WORKDIR /ExpressApp
+COPY . /ExpressApp/
+COPY package*.json ./
+RUN npm install
+```
+
+build docker image
+
+```bash
+docker build -t express/app . 
+```
 
 
-docker-compose.yml
 
-```yacas
+Docker-compose.yml
+
+```yaml
 version: "3.7"
 services:
+  express:
+    build: .
+    container_name: express-server
+    image: express/app
+    command: node app.js
+
+    ports: 
+      - '3333:3333'
+    volumes: 
+      - .:/ExpressApp
+
+    depends_on:
+      - mongo-express
+
   mongodb:
     container_name: mongo-dev
     image: mongo
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_DATABASE=auth
-      - MONGO_INITDB_ROOT_PASSWORD=pass
+      MONGO_INITDB_ROOT_USERNAME : admin
+      MONGO_INITDB_DATABASE : auth
+      MONGO_INITDB_ROOT_PASSWORD : pass
     ports:
       - '27017:27017'
     volumes: 
@@ -293,36 +328,67 @@ services:
     depends_on:
       - mongodb
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=pass
-      - ME_CONFIG_MONGODB_SERVER=mongo-dev
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=ihavealongpassword
+      ME_CONFIG_MONGODB_ADMINUSERNAME : admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD : pass
+      ME_CONFIG_MONGODB_SERVER : mongo-dev
+      ME_CONFIG_BASICAUTH_USERNAME : dmin
+      ME_CONFIG_BASICAUTH_PASSWORD : ihavealongpassword
     ports:
       - '8081:8081'
-
 ```
 
+### Create Collection
 
-
-
-
-mongodbConnect.js
+app.js
 
 ```javascript
+var express = require('express');
+const logger = require('morgan');
+
+// const API = require('./routerAPI.js')
+// const mongoDB = require('./mongodbConnect.js')
+const port = 3333
+const app = express();
+
+app.use(express.static('public'));
+app.use(logger('dev'));
+// app.use('/routerAPI', API)
+// app.use('/mongodbConnect', mongoDB)
+
 var MongoClient = require('mongodb').MongoClient;
-MongoClient.connect('mongodb://localhost:27017/', function(err, client) {
-  if(err) throw err;
-  console.log("Connected to MongoDB server");
-  let db = client.db('JS');
+var url = 'mongodb://admin:pass@localhost:27017/';
+
+MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+  var dbo = db.db("JS");
+  dbo.createCollection("customers", function(err, res) {
+    if (err) throw err;
+    console.log("Collection created!");
+    db.close();
+  });
+});
+
+app.listen(port, function() {
+  console.log('Example app listening on port 3333!');
+});
+  
+app.get('/', function(req, res) {
+  res.send('Home Page');
+    // res.sendFile(__dirname + '/public/html/index.html')
 });
 ```
 
-node mongodbConnect.js
+
+
+```bash
+docker pull mongo
+```
 
 
 
-
+```bash
+docker pull mongo
+```
 
 
 
